@@ -113,6 +113,8 @@ export interface CredentialInfo {
   fields: Record<string, string>;
   /** Какие секретные поля заполнены (значения никогда не возвращаются). */
   secretSet: Record<string, boolean>;
+  /** Секреты не удалось расшифровать (данные восстановлены на другом компьютере). */
+  broken?: boolean;
   createdAt: string;
 }
 

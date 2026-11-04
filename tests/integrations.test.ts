@@ -206,3 +206,55 @@ describe('ИИ-агенты', () => {
     expect((run.nodes.find((n) => n.nodeId === 'l')!.outputs!.main[0].json as any).text).toBe('привет от claude');
   });
 });
+
+describe('бизнес-пример: одежда → маркетолог → сценарист → редактор → подтверждение → Telegram', () => {
+  it('работает целиком; публикация в TikTok честно помечена как не подключённая', async () => {
+    const { installExample } = await import('../src/engine/examples');
+    const tg = await telegramMock();
+    const { engine } = makeEngine();
+    const inst = installExample(engine, 'clothing-pipeline');
+    expect(inst.notes.join(' ')).toContain('Демо-ИИ');
+    // пользователь выбирает Telegram-бота и chat id
+    const cid = engine.saveCredential(null, 'Бот', 'telegramBot', { token: TG_TOKEN, apiBase: tg.url });
+    const w = engine.store.getWorkflow(inst.workflow.id)!;
+    for (const n of w.nodes) { if (n.type === 'telegram.send') n.params.credential = cid; if (n.id === 'd') (n.params.assignments as any[]).find((a) => a.name === 'chatId').value = '777'; }
+    engine.updateWorkflow(w.id, { definition: { nodes: w.nodes, edges: w.edges } });
+
+    const runId = engine.startRun(w.id); await engine.drain();
+    let run = engine.store.getRunDetail(runId)!;
+    expect(run.status).toBe('waiting'); // остановились на подтверждении, процесс свободен
+    const out = (id: string) => run.nodes.find((n) => n.nodeId === id)!;
+    expect((out('a3').outputs!.main[0].json as any).final).toContain('ДЕМО-ОТВЕТ'); // цепочка агентов отработала
+    expect((out('a2').outputs!.main[0].json as any).script).toContain('сценарист'); expect((out('a2').outputs!.main[0].json as any).script).toContain('маркетолог'); // получил результат предыдущего агента
+    expect(out('ap').status).toBe('waiting');
+    expect(tg.sent()).toHaveLength(0); // до подтверждения ничего не отправлено
+
+    engine.decideApproval(runId, 'ap', 'approved', 'ок'); await engine.drain();
+    run = engine.store.getRunDetail(runId)!;
+    expect(run.status).toBe('succeeded');
+    expect(tg.sent()).toHaveLength(1);
+    expect(JSON.parse(tg.sent()[0].body).chat_id).toBe('777');
+    expect(JSON.parse(tg.sent()[0].body).text).toContain('Сценарий видео');
+    const tk = (out('tk').outputs!.main[0].json) as any;
+    expect(tk.tiktok_status).toBe('not_connected');
+    expect(tk.tiktok_note).toContain('не публиковалось');
+
+    // отклонение: в Telegram ничего не уходит
+    const r2 = engine.startRun(w.id); await engine.drain();
+    engine.decideApproval(r2, 'ap', 'rejected', 'переделать'); await engine.drain();
+    const run2 = engine.store.getRunDetail(r2)!;
+    expect(run2.status).toBe('succeeded'); expect(tg.sent()).toHaveLength(1);
+    expect(run2.nodes.find((n) => n.nodeId === 'rj')!.outputs!.main[0].json.outcome).toContain('переделать');
+    expect(run2.nodes.find((n) => n.nodeId === 'tg')!.status).toBe('skipped');
+  });
+
+  it('все примеры устанавливаются и проходят валидацию (кроме выбора Telegram-бота)', async () => {
+    const { EXAMPLES, installExample } = await import('../src/engine/examples');
+    const { engine } = makeEngine();
+    for (const ex of EXAMPLES) {
+      const r = installExample(engine, ex.id);
+      const errs = engine.validate(r.workflow).filter((i) => i.level === 'error');
+      expect(errs.every((e) => /Бот Telegram|Chat ID|подключени/i.test(e.message)), `${ex.id}: ${errs.map((e) => e.message).join('; ')}`).toBe(true);
+    }
+  });
+});

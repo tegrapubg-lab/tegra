@@ -148,8 +148,12 @@ export class Store {
   }
   listCredentials(): CredentialInfo[] {
     return (this.db.prepare('SELECT * FROM credentials ORDER BY name').all() as any[]).map((r) => {
-      const data = JSON.parse(decryptString(this.key, r.data)) as Record<string, string>;
-      return { id: r.id, name: r.name, type: r.type, createdAt: r.created_at, ...this.credentialFields(r.type, data) } as CredentialInfo;
+      try {
+        const data = JSON.parse(decryptString(this.key, r.data)) as Record<string, string>;
+        return { id: r.id, name: r.name, type: r.type, createdAt: r.created_at, ...this.credentialFields(r.type, data) } as CredentialInfo;
+      } catch {
+        return { id: r.id, name: r.name, type: r.type, createdAt: r.created_at, fields: {}, secretSet: {}, broken: true } as CredentialInfo;
+      }
     });
   }
   getCredentialData(id: string): { id: string; name: string; type: string; data: Record<string, string> } | undefined {
