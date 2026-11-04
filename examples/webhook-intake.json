@@ -1,0 +1,73 @@
+{
+  "format": "tegra-flow",
+  "version": 1,
+  "name": "Webhook: приём заказа",
+  "exportedAt": "2026-11-04T19:55:21.217Z",
+  "definition": {
+    "nodes": [
+      {
+        "id": "t",
+        "type": "trigger.webhook",
+        "name": "Webhook",
+        "position": {
+          "x": 40,
+          "y": 120
+        },
+        "params": {
+          "path": "b1a4632c1069517034f7d316",
+          "method": "POST"
+        }
+      },
+      {
+        "id": "s",
+        "type": "core.set",
+        "name": "Разобрать заказ",
+        "position": {
+          "x": 300,
+          "y": 120
+        },
+        "params": {
+          "mode": "add",
+          "assignments": [
+            {
+              "name": "customer",
+              "value": "{{ $json.body.customer ?? \"неизвестно\" }}",
+              "type": "string"
+            },
+            {
+              "name": "received",
+              "value": "{{ $now }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      {
+        "id": "r",
+        "type": "core.result",
+        "name": "Результат",
+        "position": {
+          "x": 560,
+          "y": 120
+        },
+        "params": {}
+      }
+    ],
+    "edges": [
+      {
+        "id": "t:main->s:main",
+        "source": "t",
+        "sourceHandle": "main",
+        "target": "s",
+        "targetHandle": "main"
+      },
+      {
+        "id": "s:main->r:main",
+        "source": "s",
+        "sourceHandle": "main",
+        "target": "r",
+        "targetHandle": "main"
+      }
+    ]
+  }
+}

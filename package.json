@@ -17,7 +17,9 @@
     "dev:engine": "node scripts/build.mjs engine && node dist/engine/main.js",
     "start": "npm run build && electron .",
     "dist:win": "npm run build && electron-builder --win nsis --x64",
-    "dist:dir": "npm run build && electron-builder --dir"
+    "dist:dir": "npm run build && electron-builder --dir",
+    "examples": "node scripts/gen-examples.mjs",
+    "ui-e2e": "npm run build && xvfb-run -a node scripts/ui-e2e.cjs"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
@@ -35,5 +37,53 @@
     "vite": "^8.3.5",
     "vitest": "^5.1.0",
     "zod": "^4.6.7"
+  },
+  "build": {
+    "appId": "com.tegra.flow",
+    "productName": "Tegra Flow",
+    "copyright": "Tegra",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "build/icon.png",
+      "build/tray.png",
+      "package.json",
+      "!dist/**/*.map",
+      "!**/*.map"
+    ],
+    "asar": true,
+    "extraMetadata": {
+      "main": "dist/main/main.js"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "artifactName": "Tegra-Flow-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "Tegra Flow",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "installerLanguages": [
+        "ru_RU"
+      ],
+      "language": "1049",
+      "uninstallDisplayName": "Tegra Flow"
+    }
   }
 }

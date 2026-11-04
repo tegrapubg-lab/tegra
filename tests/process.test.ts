@@ -62,7 +62,7 @@ describe('процесс движка (реальный Node-процесс)', (
 
     // корректное завершение по SIGTERM снимает замок
     e2.p.kill('SIGTERM'); await e2.exited;
-    expect(fs.existsSync(path.join(dir, 'engine.lock'))).toBe(false);
+    if (process.platform !== 'win32') expect(fs.existsSync(path.join(dir, 'engine.lock'))).toBe(false); // в Windows SIGTERM = принудительное завершение; штатный выход идёт через сообщение shutdown
     await s.close();
   });
 

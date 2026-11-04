@@ -17,7 +17,7 @@ const assert = (c, m) => { if (!c) { throw new Error('ПРОВАЛ: ' + m); } co
   const mockUrl = `http://127.0.0.1:${mock.address().port}/orders`;
 
   const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'tegra-ud-'));
-  const launch = () => _electron.launch({ executablePath: require('electron'), args: ['.', '--no-sandbox', '--disable-gpu'], cwd: path.resolve(__dirname, '..'), env: { ...process.env, TEGRA_USER_DATA: userData, TEGRA_DEVTOOLS: '1' } });
+  const launch = () => _electron.launch({ executablePath: require('electron'), args: [process.env.TEGRA_APP_PATH || '.', '--no-sandbox', '--disable-gpu'], cwd: path.resolve(__dirname, '..'), env: { ...process.env, TEGRA_USER_DATA: userData, TEGRA_DEVTOOLS: '1' } });
   let app = await launch();
   let win = await app.firstWindow();
   win.on('pageerror', (e) => console.log('  [pageerror]', e.message));

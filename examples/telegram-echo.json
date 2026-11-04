@@ -1,0 +1,71 @@
+{
+  "format": "tegra-flow",
+  "version": 1,
+  "name": "Telegram: эхо-бот",
+  "exportedAt": "2026-11-04T19:55:21.215Z",
+  "definition": {
+    "nodes": [
+      {
+        "id": "t",
+        "type": "trigger.telegram",
+        "name": "Telegram: сообщение",
+        "position": {
+          "x": 40,
+          "y": 120
+        },
+        "params": {
+          "allowedChatIds": ""
+        }
+      },
+      {
+        "id": "s",
+        "type": "core.set",
+        "name": "Ответ",
+        "position": {
+          "x": 300,
+          "y": 120
+        },
+        "params": {
+          "mode": "add",
+          "assignments": [
+            {
+              "name": "reply",
+              "value": "Вы написали: {{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      {
+        "id": "m",
+        "type": "telegram.send",
+        "name": "Telegram: отправить",
+        "position": {
+          "x": 560,
+          "y": 120
+        },
+        "params": {
+          "chatId": "{{ $json.chatId }}",
+          "mode": "text",
+          "text": "{{ $json.reply }}"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "t:main->s:main",
+        "source": "t",
+        "sourceHandle": "main",
+        "target": "s",
+        "targetHandle": "main"
+      },
+      {
+        "id": "s:main->m:main",
+        "source": "s",
+        "sourceHandle": "main",
+        "target": "m",
+        "targetHandle": "main"
+      }
+    ]
+  }
+}

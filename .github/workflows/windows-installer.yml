@@ -1,0 +1,21 @@
+# Сборка установщика Windows (.exe) на настоящем Windows: значок exe и ярлыки встраиваются штатно.
+name: windows-installer
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run dist:win
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tegra-Flow-Setup
+          path: release/Tegra-Flow-Setup-*.exe

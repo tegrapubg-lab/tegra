@@ -1,0 +1,143 @@
+{
+  "format": "tegra-flow",
+  "version": 1,
+  "name": "Пример: заказ → IF → HTTP",
+  "exportedAt": "2026-11-04T19:55:21.208Z",
+  "definition": {
+    "nodes": [
+      {
+        "id": "t",
+        "type": "trigger.manual",
+        "name": "Ручной запуск",
+        "position": {
+          "x": 40,
+          "y": 140
+        },
+        "params": {}
+      },
+      {
+        "id": "s",
+        "type": "core.set",
+        "name": "Данные заказа",
+        "position": {
+          "x": 280,
+          "y": 140
+        },
+        "params": {
+          "mode": "add",
+          "assignments": [
+            {
+              "name": "name",
+              "value": "Куртка",
+              "type": "string"
+            },
+            {
+              "name": "price",
+              "value": "1500",
+              "type": "number"
+            },
+            {
+              "name": "qty",
+              "value": "3",
+              "type": "number"
+            },
+            {
+              "name": "total",
+              "value": "{{ $json.price * $json.qty }}",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      {
+        "id": "i",
+        "type": "core.if",
+        "name": "Крупный заказ?",
+        "position": {
+          "x": 520,
+          "y": 140
+        },
+        "params": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "left": "{{ $json.total }}",
+              "op": "gt",
+              "right": "3000"
+            }
+          ]
+        }
+      },
+      {
+        "id": "h",
+        "type": "http.request",
+        "name": "HTTP: отправить заказ",
+        "position": {
+          "x": 780,
+          "y": 60
+        },
+        "params": {
+          "method": "POST",
+          "url": "https://jsonplaceholder.typicode.com/posts",
+          "bodyType": "json",
+          "body": "{\"title\":\"{{ $json.name }}\",\"body\":\"Сумма {{ $json.total }}\",\"userId\":1}",
+          "headers": [],
+          "query": []
+        },
+        "settings": {
+          "maxAttempts": 3,
+          "retryDelayMs": 1000
+        }
+      },
+      {
+        "id": "o",
+        "type": "core.set",
+        "name": "Обычный заказ",
+        "position": {
+          "x": 780,
+          "y": 240
+        },
+        "params": {
+          "mode": "add",
+          "assignments": [
+            {
+              "name": "note",
+              "value": "Сумма небольшая — HTTP-запрос не нужен",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "t:main->s:main",
+        "source": "t",
+        "sourceHandle": "main",
+        "target": "s",
+        "targetHandle": "main"
+      },
+      {
+        "id": "s:main->i:main",
+        "source": "s",
+        "sourceHandle": "main",
+        "target": "i",
+        "targetHandle": "main"
+      },
+      {
+        "id": "i:true->h:main",
+        "source": "i",
+        "sourceHandle": "true",
+        "target": "h",
+        "targetHandle": "main"
+      },
+      {
+        "id": "i:false->o:main",
+        "source": "i",
+        "sourceHandle": "false",
+        "target": "o",
+        "targetHandle": "main"
+      }
+    ]
+  }
+}
