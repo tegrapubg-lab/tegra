@@ -114,6 +114,7 @@ export const agentNode: NodeImpl = {
         const used = r.usage.inputTokens + r.usage.outputTokens;
         totalTokens += used;
         trace.push({ step, type: 'model', content: cut(r.content, 1500), tokens: used });
+        ctx.log(`Шаг ${step}: ответ модели, токенов ${used}${r.toolCalls.length ? `, запрошено инструментов: ${r.toolCalls.length}` : ''}`);
         if (totalTokens > maxTokens) throw new Error(`Лимит токенов агента исчерпан (${totalTokens} > ${maxTokens})`);
         if (r.toolCalls.length === 0) {
           final = r.content;
@@ -136,6 +137,7 @@ export const agentNode: NodeImpl = {
             try { result = await runTool(call, toolIds, ctx); } catch (e) { error = (e as Error).message; result = 'Ошибка: ' + error; }
           }
           trace.push({ step, type: 'tool', tool: call.name, arguments: call.arguments, result: cut(result, 2000), error });
+          ctx.log(`Шаг ${step}: инструмент ${call.name}(${cut(JSON.stringify(call.arguments ?? {}), 200)}) → ${error ? 'ОШИБКА: ' + error : cut(result, 200)}`);
           messages.push({ role: 'tool', toolCallId: call.id, name: call.name, content: result });
         }
       }

@@ -9,13 +9,26 @@ export function tgBase(cred: CredentialData): { base: string; explicit: boolean 
 }
 
 /** Вызов Bot API. Токен никогда не попадает в сообщения об ошибках. */
-export async function tgCall(cred: CredentialData, method: string, payload: Record<string, unknown> | FormData, signal?: AbortSignal, timeoutSec = 0): Promise<any> {
+export interface Multipart { fields: Record<string, string>; file: { field: string; name: string; type: string; content: Buffer } }
+
+/** multipart/form-data вручную: встроенный FormData Node несовместим с undici из пакета. */
+function encodeMultipart(m: Multipart): { body: Buffer; contentType: string } {
+  const boundary = '----tegra' + Math.random().toString(16).slice(2) + Date.now().toString(16);
+  const parts: Buffer[] = [];
+  for (const [k, v] of Object.entries(m.fields)) parts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="${k}"\r\n\r\n${v}\r\n`));
+  const name = m.file.name.replace(/["\r\n]/g, '_');
+  parts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="${m.file.field}"; filename="${name}"\r\nContent-Type: ${m.file.type}\r\n\r\n`), m.file.content, Buffer.from(`\r\n--${boundary}--\r\n`));
+  return { body: Buffer.concat(parts), contentType: `multipart/form-data; boundary=${boundary}` };
+}
+
+export async function tgCall(cred: CredentialData, method: string, payload: Record<string, unknown> | Multipart, signal?: AbortSignal): Promise<any> {
   const { base, explicit } = tgBase(cred);
   const url = `${base}/bot${cred.data.token}/${method}`;
-  const isForm = typeof FormData !== 'undefined' && payload instanceof FormData;
+  const isForm = 'file' in payload && 'fields' in payload;
+  const mp = isForm ? encodeMultipart(payload as Multipart) : null;
   const res = await guardedFetch({
-    url, method: 'POST', headers: isForm ? {} : { 'content-type': 'application/json' },
-    body: isForm ? (payload as FormData) : JSON.stringify(payload), allowPrivate: explicit,
+    url, method: 'POST', headers: { 'content-type': mp ? mp.contentType : 'application/json' },
+    body: mp ? mp.body : JSON.stringify(payload), allowPrivate: explicit,
     maxBytes: 5 * 1024 * 1024, signal,
   });
   let j: any;
@@ -24,7 +37,6 @@ export async function tgCall(cred: CredentialData, method: string, payload: Reco
     const e = new Error(`Telegram: ${j.description ?? 'ошибка'} (код ${j.error_code ?? res.status})`) as Error & { code?: number };
     e.code = j.error_code; throw e;
   }
-  void timeoutSec;
   return j.result;
 }
 
@@ -55,12 +67,9 @@ export const telegramSendNode: NodeImpl = {
       } else {
         const content = ctx.str('fileContent', i);
         if (Buffer.byteLength(content) > 10 * 1024 * 1024) throw new Error('Файл больше 10 МБ');
-        const form = new FormData();
-        form.set('chat_id', chatId);
         const caption = ctx.str('text', i).slice(0, 1000);
-        if (caption) form.set('caption', caption);
-        form.set('document', new Blob([content], { type: 'text/plain' }), ctx.str('fileName', i).replace(/[^\w.\-а-яА-ЯёЁ ]/g, '_') || 'result.txt');
-        const r = await tgCall(cred, 'sendDocument', form, ctx.signal);
+        const fileName = ctx.str('fileName', i).replace(/[^\w.\-а-яА-ЯёЁ ]/g, '_') || 'result.txt';
+        const r = await tgCall(cred, 'sendDocument', { fields: { chat_id: chatId, ...(caption ? { caption } : {}) }, file: { field: 'document', name: fileName, type: 'text/plain; charset=utf-8', content: Buffer.from(content, 'utf8') } }, ctx.signal);
         msgIds = [r.message_id];
       }
       out.push({ json: { ...ctx.items[i].json, telegram: { chatId, messageIds: msgIds, sent: true } } });

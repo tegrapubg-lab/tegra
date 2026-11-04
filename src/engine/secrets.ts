@@ -56,8 +56,12 @@ export class Redactor {
     if (Array.isArray(v)) return v.map((x) => this.value(x, depth + 1)) as unknown as T;
     if (v && typeof v === 'object') {
       const out: Record<string, unknown> = {};
-      for (const [k, x] of Object.entries(v as Record<string, unknown>)) {
-        out[k] = SENSITIVE_KEY.test(k) && x !== null && x !== undefined && x !== '' ? '***' : this.value(x, depth + 1);
+      const obj = v as Record<string, unknown>;
+      // строки списков «ключ/значение» (заголовки, параметры): маскируем значение по имени ключа
+      const kvSensitive = typeof obj.key === 'string' && SENSITIVE_KEY.test(obj.key.trim());
+      for (const [k, x] of Object.entries(obj)) {
+        const sensitive = SENSITIVE_KEY.test(k) || (kvSensitive && k === 'value');
+        out[k] = sensitive && x !== null && x !== undefined && x !== '' ? '***' : this.value(x, depth + 1);
       }
       return out as T;
     }

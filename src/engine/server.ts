@@ -39,7 +39,7 @@ export function createServer(engine: Engine, opts: ServerOptions) {
   add('GET', '/api/workflows/:id/export', ({ params }) => engine.exportWorkflow(params.id));
   add('POST', '/api/workflows/:id/run', ({ params, body }) => { const b = runSchema.parse(body ?? {}); return { runId: engine.startRun(params.id, b) }; });
   add('GET', '/api/runs', ({ query }) => engine.store.listRuns({ workflowId: query.workflowId, status: query.status, limit: query.limit ? Number(query.limit) : 50 }));
-  add('GET', '/api/runs/:id', ({ params }) => engine.store.getRunDetail(params.id) ?? (() => { throw new EngineError('Запуск не найден', 404); })());
+  add('GET', '/api/runs/:id', ({ params }) => engine.runDetail(params.id) ?? (() => { throw new EngineError('Запуск не найден', 404); })());
   add('POST', '/api/runs/:id/cancel', ({ params }) => engine.cancelRun(params.id));
   add('DELETE', '/api/runs/:id', ({ params }) => { const r = engine.store.getRunRow(params.id); if (!r) throw new EngineError('Запуск не найден', 404); if (!['succeeded', 'failed', 'cancelled'].includes(r.status)) throw new EngineError('Сначала отмените запуск', 409); engine.store.deleteRun(params.id); return { ok: true }; });
   add('GET', '/api/approvals', () => engine.listApprovals());

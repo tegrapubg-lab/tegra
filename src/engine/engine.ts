@@ -331,6 +331,12 @@ export class Engine {
     return { status: row.status, items: this.resultItems(id), error: row.error ?? undefined };
   }
 
+  /** Детали запуска для показа пользователю: секреты замаскированы (в т.ч. вписанные вручную в параметры). */
+  runDetail(id: string) {
+    const d = this.store.getRunDetail(id);
+    return d ? this.redactor.value(d) : undefined;
+  }
+
   resultItems(runId: string): Item[] {
     const run = this.store.getRunRow(runId)!; const def = JSON.parse(run.snapshot) as WorkflowDefinition;
     const states = new Map(this.store.getRunNodes(runId).map((s) => [s.nodeId, s]));
