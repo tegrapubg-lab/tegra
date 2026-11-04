@@ -1,12 +1,39 @@
 {
-  "name": "discord-lite",
-  "version": "1.0.0",
-  "main": "server.js",
+  "name": "tegra-flow",
+  "productName": "Tegra Flow",
+  "version": "0.1.0",
+  "description": "Локальная платформа автоматизации рабочих процессов (визуальный редактор, движок, ИИ-агенты) для Windows",
+  "author": "Tegra",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "dist/main/main.js",
   "scripts": {
-    "start": "node server.js"
+    "build:engine": "node scripts/build.mjs engine",
+    "build:main": "node scripts/build.mjs main",
+    "build:renderer": "vite build",
+    "build": "node scripts/build.mjs all && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/build.mjs engine && vitest run",
+    "dev:engine": "node scripts/build.mjs engine && node dist/engine/main.js",
+    "start": "npm run build && electron .",
+    "dist:win": "npm run build && electron-builder --win nsis --x64",
+    "dist:dir": "npm run build && electron-builder --dir"
   },
-  "dependencies": {
-    "express": "^4.18.2",
-    "socket.io": "^4.7.2"
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.2.1",
+    "@xyflow/react": "^12.12.1",
+    "electron": "^45.2.2",
+    "electron-builder": "^26.18.0",
+    "esbuild": "^0.28.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "^7.0.2",
+    "undici": "^8.12.3",
+    "vite": "^8.3.5",
+    "vitest": "^5.1.0",
+    "zod": "^4.6.7"
   }
 }
