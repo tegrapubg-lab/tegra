@@ -56,7 +56,7 @@ function Scalar({ f, value, onChange, ctx }: { f: FieldSpec; value: unknown; onC
       const options = ctx.credentials.filter((c) => c.type === f.credentialType);
       return (
         <div className="row">
-          <select value={str} onChange={(e) => onChange(e.target.value)}><option value="">— не выбрано —</option>{options.map((c) => <option key={c.id} value={c.id}>{c.name}{c.broken ? ' (не читается)' : ''}</option>)}</select>
+          <select className={str && !options.some((c) => c.id === str) ? 'stale' : ''} value={str} onChange={(e) => onChange(e.target.value)}><option value="">— не выбрано —</option>{str && !options.some((c) => c.id === str) && <option value={str}>⚠ подключение удалено — выберите заново</option>}{options.map((c) => <option key={c.id} value={c.id}>{c.name}{c.broken ? ' (не читается)' : ''}</option>)}</select>
           <button type="button" title="Создать подключение" onClick={() => setDlg(true)}>＋</button>
           {dlg && <CredentialDialog type={f.credentialType!} onClose={() => setDlg(false)} onSaved={(id) => { setDlg(false); ctx.reloadCredentials(); onChange(id); }} />}
         </div>

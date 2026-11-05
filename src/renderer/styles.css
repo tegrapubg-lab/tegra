@@ -101,3 +101,4 @@ details { margin: 6px 0; } summary { cursor: pointer; color: var(--acc2); }
 .react-flow__minimap-mask { fill: rgba(15,18,32,.7); }
 .react-flow__controls-button { background: var(--bg3); color: var(--txt); border-bottom: 1px solid var(--line); } .react-flow__controls-button svg { fill: currentColor; }
 .react-flow__edge-path { stroke-width: 2; }
+select.stale { border-color: var(--err); color: #fecaca; }
