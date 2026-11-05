@@ -9,9 +9,13 @@ function adapterFor(ctx: NodeExecContext): { adapter: LlmAdapter; model: string;
   const cred = ctx.svc.getCredential(ctx.str('credential'));
   if (cred.type !== 'llmProvider') throw new Error('Выбранное подключение не является провайдером ИИ');
   const adapter = ctx.svc.llm.create({ provider: cred.data.provider || 'openai', baseUrl: cred.data.baseUrl, apiKey: cred.data.apiKey, defaultModel: cred.data.defaultModel });
-  const model = ctx.str('model') || cred.data.defaultModel || (cred.data.provider === 'demo' ? 'demo' : '');
+  const model = (ctx.str('model') || cred.data.defaultModel || (cred.data.provider === 'demo' ? 'demo' : '')).trim();
   if (!model) throw new Error('Не указана модель: заполните поле «Модель» узла или «Модель по умолчанию» в подключении');
-  return { adapter, model, cred };
+  const wrapped: LlmAdapter = { async chat(req) {
+    try { return await adapter.chat(req); }
+    catch (e) { const m = (e as Error).message; throw new Error(/Провайдер ИИ вернул/.test(m) ? `${m}\n(отправлена модель: «${req.model}»)` : m); }
+  } };
+  return { adapter: wrapped, model, cred };
 }
 
 export const llmNode: NodeImpl = {
